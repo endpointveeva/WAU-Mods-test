@@ -2,8 +2,8 @@ name: Generate Index Page
 
 on:
   push:
-    branches:
-      - main  # Trigger on changes to the main branch
+    paths:
+      - mods/**  # Trigger only when files in the "mods" folder change
 
 jobs:
   generate-index:
@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3  # Check out the repository code
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -19,7 +19,7 @@ jobs:
           python-version: 3.x
 
       - name: Install Dependencies
-        run: python -m pip install requests  # Install Python requests library
+        run: python -m pip install requests
 
       - name: Generate Index
         run: |
@@ -29,10 +29,11 @@ jobs:
 
           username = "${{ github.repository_owner }}"
           repository = "${{ github.event.repository.name }}"
-          directory = "mods"  # Set this to the directory path you want to index
+          directory = "mods"  # Only look inside the "mods" folder
           branch = "${{ github.ref_name }}"
           api_url = f"https://api.github.com/repos/{username}/{repository}/contents/{directory}?ref={branch}"
           response = requests.get(api_url, headers={"User-Agent": "GitHub-Action"})
+
           if response.status_code == 200:
               files = response.json()
               html_content = "<!DOCTYPE html>\\n<html>\\n<body>\\n<ul>\\n"
@@ -40,7 +41,7 @@ jobs:
                   if file['type'] == 'file':
                       html_content += f'<li><a href="{file["download_url"]}">{file["name"]}</a></li>\\n'
               html_content += "</ul>\\n</body>\\n</html>"
-              os.makedirs("mods", exist_ok=True)  # Create the "mods" folder if it doesn't exist
+              os.makedirs("mods", exist_ok=True)
               with open("mods/index.html", "w") as f:
                   f.write(html_content)
           else:
