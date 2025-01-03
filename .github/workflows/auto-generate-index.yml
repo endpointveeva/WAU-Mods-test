@@ -39,7 +39,8 @@ jobs:
               html_content = "<!DOCTYPE html>\\n<html>\\n<body>\\n<ul>\\n"
               for file in files:
                   if file['type'] == 'file':
-                      html_content += f'<li><a href="{file["download_url"]}">{file["name"]}</a></li>\\n'
+                      # Use the file name instead of the full URL
+                      html_content += f'<li><a href="{file["name"]}">{file["name"]}</a></li>\\n'
               html_content += "</ul>\\n</body>\\n</html>"
               os.makedirs("mods", exist_ok=True)
               with open("mods/index.html", "w") as f:
