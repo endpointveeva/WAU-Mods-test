@@ -1,1 +1,1 @@
-/qn /norestart /dir=c:\temp
+/qn /norestart /dir=c:\temp /S
