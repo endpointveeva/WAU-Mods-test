@@ -1,4 +1,4 @@
-name: Generate Index Page
+name: Ring 0 Generate Index Page
 
 on:
   push:
