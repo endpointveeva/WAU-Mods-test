@@ -3,7 +3,10 @@ name: Generate Index Pages for Rings
 on:
   push:
     paths:
-      - Ring_*/mods/**  # Trigger only for changes inside Ring_*/mods folders
+      - Ring_0/mods/**
+      - Ring_1/mods/**
+      - Ring_2/mods/**
+      - Ring_3/mods/**
 
 jobs:
   generate-index:
@@ -18,53 +21,27 @@ jobs:
         with:
           python-version: 3.x
 
-      - name: Install Dependencies
-        run: python -m pip install requests
-
-      - name: Generate Index Pages
+      - name: Generate Index Files
         run: |
           python <<EOF
-          import requests
           import os
-          import subprocess
-          from datetime import datetime
 
-          # Get the list of modified files
-          modified_files = subprocess.check_output(
-              "git diff-tree --no-commit-id --name-only -r ${{ github.sha }}",
-              shell=True,
-              text=True,
-          ).strip().splitlines()
+          # Define the directories to monitor
+          directories = ["Ring_0/mods", "Ring_1/mods", "Ring_2/mods", "Ring_3/mods"]
 
-          # Identify unique directories (e.g., Ring_0/mods, Ring_1/mods)
-          directories = set("/".join(f.split("/")[:2]) for f in modified_files if f.startswith("Ring_") and "mods/" in f)
-          if not directories:
-              print("No changes detected in Ring_*/mods directories.")
-              exit(0)
-
-          print(f"Detected directories: {directories}")
           for directory in directories:
-              username = "${{ github.repository_owner }}"
-              repository = "${{ github.event.repository.name }}"
-              branch = "${{ github.ref_name }}"
-              api_url = f"https://api.github.com/repos/{username}/{repository}/contents/{directory}?ref={branch}"
-              print(f"Fetching contents from: {api_url}")
-              response = requests.get(api_url, headers={"User-Agent": "GitHub-Action"})
-
-              if response.status_code == 200:
-                  files = response.json()
-                  html_content = f"<!DOCTYPE html>\\n<html>\\n<body>\\n<ul>\\n<!-- Updated: {datetime.utcnow()} -->\\n"
+              # Ensure the directory exists
+              if os.path.exists(directory):
+                  # Get all files in the directory, excluding "index.html"
+                  files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and f != "index.html"]
+                  # Generate HTML content
+                  html_content = "<!DOCTYPE html>\\n<html>\\n<body>\\n<ul>\\n"
                   for file in files:
-                      if file['type'] == 'file':
-                          html_content += f'<li><a href="{file["name"]}">{file["name"]}</a></li>\\n'
+                      html_content += f'<li><a href="{file}">{file}</a></li>\\n'
                   html_content += "</ul>\\n</body>\\n</html>"
-                  os.makedirs(directory, exist_ok=True)
-                  with open(f"{directory}/index.html", "w") as f:
+                  # Write the index.html file
+                  with open(os.path.join(directory, "index.html"), "w") as f:
                       f.write(html_content)
-                  print(f"Updated index.html for {directory}")
-              else:
-                  print(f"Failed to fetch contents for {directory}: {response.status_code}, {response.text}")
-                  continue
           EOF
 
       - name: Commit Changes
@@ -72,5 +49,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add Ring_*/mods/index.html
-          git diff --cached --quiet || git commit -m "Update index.html for modified Rings"
+          git commit -m "Update index.html files in mods folders"
           git push
