@@ -3,7 +3,7 @@ name: Generate Index Page for Ring_2
 on:
   push:
     paths:
-      - Ring_2/mods/**  # Trigger only when files in the "Ring_2/mods" folder change
+      - Ring_2/mods/**
 
 jobs:
   generate-index:
@@ -12,6 +12,17 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: Acquire Lock
+        run: |
+          while [ -f ".github/LOCK" ]; do
+            echo "Waiting for lock to be released..."
+            sleep 5
+          done
+          echo "Lock acquired by Ring_2" > .github/LOCK
+          git add .github/LOCK
+          git commit -m "Acquire lock for Ring_2"
+          git push
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -29,7 +40,7 @@ jobs:
 
           username = "${{ github.repository_owner }}"
           repository = "${{ github.event.repository.name }}"
-          directory = "Ring_2/mods"  # Look inside the "Ring_2/mods" folder
+          directory = "Ring_2/mods"
           branch = "${{ github.ref_name }}"
           api_url = f"https://api.github.com/repos/{username}/{repository}/contents/{directory}?ref={branch}"
           response = requests.get(api_url, headers={"User-Agent": "GitHub-Action"})
@@ -54,4 +65,11 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add Ring_2/mods/index.html
           git commit -m "Update index.html in Ring_2/mods folder"
+          git push
+
+      - name: Release Lock
+        run: |
+          rm -f .github/LOCK
+          git add .github/LOCK
+          git commit -m "Release lock for Ring_2"
           git push
